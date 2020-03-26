@@ -72,9 +72,11 @@ def GetCosmo (addict):
             'Omega_b' : Obh2/h/h,
             'h' : h,
             'n_s':  ns,
+            'm_nu': 0.06,
             'A_s' : np.exp(lnttAs)/10e10*np.pi**2 # Eh??
         }
-        return ccl.Cosmology(**CP,**addict)
+        CP.update(addict)
+        return ccl.Cosmology(**CP)
     def _t(h):
         C=_C(h) 
         d=ccl.comoving_angular_distance(C,acmb) / rd(C)
