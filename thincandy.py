@@ -28,7 +28,7 @@ def main():
     print (ccl.sigma8(CBase), rd(CBase))
     Copen = GetCosmo ({'Omega_k':-0.01})
     Cw = GetCosmo ({'w0':-0.7})
-    Cmnu = GetCosmo ({'m_nu':0.1})
+    Cmnu = GetCosmo ({'m_nu':0.3})
 
 
     
