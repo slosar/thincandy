@@ -2,6 +2,87 @@
 import pyccl as ccl
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.optimize as so
+
+
+
+def main():
+    global aar, zar, CBase, Obh2, Och2, lnttAs, ns
+    # Planck best fit
+    Obh2 = 0.02233
+    Och2 = 0.1198
+    lnttAs = 3.043
+    h = 67.32/100.
+    ns = 0.9652
+
+    CBaseP = {
+        'Omega_c' :Och2/h/h,
+        'Omega_b' : Obh2/h/h,
+        'h' : h,
+        'n_s':  ns,
+        'A_s' : np.exp(lnttAs)/10e10*np.pi**2 # Eh??
+    }
+
+    CBase = ccl.Cosmology(**CBaseP)
+
+    print (ccl.sigma8(CBase), rd(CBase))
+    Copen = GetCosmo ({'Omega_k':-0.01})
+    Cw = GetCosmo ({'w0':-0.7})
+    Cmnu = GetCosmo ({'m_nu':0.1})
+
+
+    
+    zar=np.linspace (0,2,100)
+    aar = 1/(1+zar)
+
+    
+    plt.figure(figsize=(10,6), dpi=200)
+    for i,(fun,name) in enumerate([(aiso,'isotropic BAO'),
+                                   (aperp, 'transverse BAO'),
+                                   (apar, 'radial BAO'),
+                                   (sn, 'SN distance '),
+                                   (fs8, 'fsigma8'),
+                                   (shearshear, 'WL shear auto')]):
+        plt.subplot(2,3,i+1)
+        plt.plot(zar,fun(CBase),'k-', label='LCDM '+lpars(CBase))
+        plt.plot(zar,fun(Copen),'r:',label='OLCDM '+lpars(Copen))
+        plt.plot(zar,fun(Cw),'g--', label='wCDM '+lpars(Cw))
+        plt.plot(zar,fun(Cmnu),'b-.', label='$\\nu$CDM '+lpars(Cmnu))
+        if (i==0):
+            plt.legend()
+        plt.xlabel("z")
+        plt.ylabel('$\Delta$ '+name)
+        
+    plt.tight_layout()
+    plt.savefig('thincandy.png')
+    plt.show()
+
+
+def lpars(C):
+    str='h=%1.2f $\\Omega_m=%1.2f$ '%(C['h'],C['Omega_m'])
+    return str
+    
+def GetCosmo (addict):
+    ## find the correct h, to kee distance t
+    acmb=1/(1150.)
+    target = ccl.comoving_angular_distance(CBase,acmb) / rd(CBase)
+    def _C(h):
+        CP = {
+            'Omega_c' :Och2/h/h,
+            'Omega_b' : Obh2/h/h,
+            'h' : h,
+            'n_s':  ns,
+            'A_s' : np.exp(lnttAs)/10e10*np.pi**2 # Eh??
+        }
+        return ccl.Cosmology(**CP,**addict)
+    def _t(h):
+        C=_C(h) 
+        d=ccl.comoving_angular_distance(C,acmb) / rd(C)
+        return d-target
+        
+    hout = so.bisect(_t,0.3,1.0)
+    return _C(hout)
+
 
 def rd_cuesta_approx(obh2, ocbh2, onuh2, Nnu):
     if (abs(Nnu-3) > 0.1):
@@ -22,10 +103,9 @@ def aperp (C):
     aperp0 = ccl.comoving_angular_distance(CBase,aar) / rd(CBase)
     return aperp / aperp0
 
-
 def apar (C):
-    apar = 1/ccl.h_over_h0(C,aar) / rd(C)
-    apar0 = 1/ccl.h_over_h0(CBase,aar) / rd(CBase)
+    apar = 1/ccl.h_over_h0(C,aar)/C['h'] / rd(C)
+    apar0 = 1/ccl.h_over_h0(CBase,aar)/CBase['h'] / rd(CBase)
     return apar / apar0
 
 def aiso (C):
@@ -54,55 +134,11 @@ def shearshear (C):
     sp0 = np.array([shearpower(CBase,z) for z in zar])
     return sp/sp0
     
+
+if __name__=="__main__":
+    main()
     
+
     
-
-
-# Planck best fit
-Obh2 = 0.02233
-Och2 = 0.1198
-lnttAs = 3.043
-h = 67.32/100.
-ns = 0.9652
-
-CBaseP = {
-    'Omega_c' :Och2/h/h,
-    'Omega_b' : Obh2/h/h,
-    'h' : h,
-    'n_s':  ns,
-    'A_s' : np.exp(lnttAs)/10e10*np.pi**2 # Eh??
-}
-
-CBase = ccl.Cosmology(**CBaseP)
-print (ccl.sigma8(CBase), rd(CBase))
-Copen = ccl.Cosmology(**CBaseP, Omega_k=-0.1)
-Cw = ccl.Cosmology(**CBaseP, w0=-0.7)
-Cwa = ccl.Cosmology(**CBaseP, w0=-0.9, wa=+0.5)
-
-zar=np.linspace (0,2,100)
-aar = 1/(1+zar)
-
-plt.figure(figsize=(10,6), dpi=200)
-for i,(fun,name) in enumerate([(aiso,'isotropic BAO'),
-                               (aperp, 'transverse BAO'),
-                               (apar, 'radial BAO'),
-                               (sn, 'SN distance '),
-                               (fs8, 'fsigma8'),
-                               (shearshear, 'WL shear auto')]):
-    plt.subplot(2,3,i+1)
-    plt.plot(zar,fun(CBase),'k-')
-    plt.plot(zar,fun(Copen),'r:',label='OLCDM')
-    plt.plot(zar,fun(Cw),'g--', label='wCDM')
-    plt.plot(zar,fun(Cwa),'b-.', label='wwaCDM')
-    if (i==0):
-        plt.legend()
-    plt.xlabel("z")
-    plt.ylabel('$\Delta$ '+name)
-
-plt.tight_layout()
-plt.savefig('thincandy.png')
-plt.show()
-
-
 
 
