@@ -41,6 +41,12 @@ class ThinCandy:
         }
         self.CBase = ccl.Cosmology(**self.CBaseP)
 
+        # aar=1/(1+np.array([0.38,0.51,0.70]))
+        # print (ccl.comoving_angular_distance(self.CBase,aar) / self.rd(self.CBase),
+        #        (1/aar-1)*
+        #        3e3/ccl.h_over_h0(self.CBase,aar)/self.CBase['h'] / self.rd(self.CBase))
+
+        # stop()
         self.sndata = np.loadtxt('data/pantheon.txt')
         self.snz = self.sndata[:,0]
         self.snval = self.sndata[:,2]
@@ -51,14 +57,17 @@ class ThinCandy:
     def bgplot(self):
         print (ccl.sigma8(self.CBase), self.rd(self.CBase))
         print ('getting open')
-        self.Copen = self.GetCosmo ({'Omega_k':-0.044})
-        print ('getting cw')
-        self.Cw = self.GetCosmo ({'w0':-1.58})
-        print ('getting cmnu')
-        self.Cmnu = self.GetCosmo ({'m_nu':0.26})
-        #self.Copen=self.CBase
-        #self.Cw=self.CBase
-        #self.Cmnu=self.CBase
+
+        if True:
+            self.Copen = self.GetCosmo ({'Omega_k':-0.044})
+            print ('getting cw')
+            self.Cw = self.GetCosmo ({'w0':-1.58})
+            print ('getting cmnu')
+            self.Cmnu = self.GetCosmo ({'m_nu':0.26})
+        else: #for fast debuggin
+            self.Copen=self.CBase
+            self.Cw=self.CBase
+            self.Cmnu=self.CBase
 
         #[(aiso,'isotropic BAO'), (aperp, 'transverse BAO'), (apar,
         #'radial BAO'), (sn, 'SN distance '), (fs8, 'fsigma8'),
@@ -67,17 +76,16 @@ class ThinCandy:
 
 
 
-        f,axl = plt.subplots(4,2, facecolor='w',
-                             gridspec_kw={'width_ratios':(3,1),'hspace':0.0,'wspace':0.05},figsize=(10,8))
+        f,axl = plt.subplots(3,2, facecolor='w',
+                             gridspec_kw={'width_ratios':(3,1),'hspace':0.0,'wspace':0.05},figsize=(10,6))
 
-        print (axl)
-        for i,((fun,name),(axl,axr)) in enumerate(zip ([(self.aiso,'BAO $\\bigcirc$'),
-                                                      (self.aperp, 'BAO $\perp$'),
+        print (axl)# [(self.aiso,'BAO $\\bigcirc$'),
+        for i,((fun,name),(axl,axr)) in enumerate(zip ([(self.aperp, 'BAO $\perp$'),
                                                       (self.apar, 'BAO $\parallel$'),
                                                       (self.sn, 'SN')],axl)):
             
             
-            for model,label,style in [(self.CBase,'LCDM','k--'), (self.Copen,'OLCDM','r:'), (self.Cw,'wCDM','g-.'),
+            for model,label,style in [(self.CBase,'LCDM','k:'), (self.Copen,'OLCDM','r--'), (self.Cw,'wCDM','g-.'),
                                 (self.Cmnu, '$\\nu$CDM','b-')]:
                 vals=fun(model)
                 axl.plot(self.zar[:self.Nl],vals[:self.Nl],style,label=label)
@@ -85,33 +93,33 @@ class ThinCandy:
 
             if "perp" in name:
                 for zb,iso,isoe,perp,perpe,par,pare in self.baodata:
+                    axr.errorbar(1150,1,yerr=0.000605211, fmt='ko')
                     if perp>0:
                         norm = ccl.comoving_angular_distance(self.CBase,1/(1+zb)) / self.rd(self.CBase)
                         #print (zb,norm,perp,perpe,perp/norm,perpe/norm)
-                        axl.errorbar(zb,perp/norm,yerr=perpe/norm,fmt='k.')
-                    axr.errorbar(1150,1,yerr=0.000605211, fmt='k.')
-            elif "par" in name:
-                for zb,iso,isoe,perp,perpe,par,pare in self.baodata:
-                    if par>0:
-                        norm = 299792.45/(ccl.h_over_h0(self.CBase,1/(1+zb))*self.CBase['H0'] * self.rd(self.CBase))
-                        #print (zb,norm,par,pare,par/norm,pare/norm)
-                        axl.errorbar(zb,par/norm,yerr=pare/norm,fmt='k.')
-            elif "circ" in name:
-                for zb,iso,isoe,perp,perpe,par,pare in self.baodata:
+                        axl.errorbar(zb,perp/norm,yerr=perpe/norm,fmt='ko')
                     if iso>0:
                         print (self.rd(self.CBase))
                         normperp = ccl.comoving_angular_distance(self.CBase,1/(1+zb)) / self.rd(self.CBase)
                         normpar = 299792.45/(ccl.h_over_h0(self.CBase,1/(1+zb))*self.CBase['H0'] * self.rd(self.CBase))
                         norm = (zb*normpar)**(1/3)*normperp**(2/3)
-                        axl.errorbar(zb,iso/norm,yerr=isoe/norm,fmt='k.')
+                        axl.errorbar(zb,iso/norm,yerr=isoe/norm,fmt='ko')
+
+            elif "par" in name:
+
+                for zb,iso,isoe,perp,perpe,par,pare in self.baodata:
+                    if par>0:
+                        norm = 299792.45/(ccl.h_over_h0(self.CBase,1/(1+zb))*self.CBase['H0'] * self.rd(self.CBase))
+                        #print (zb,norm,par,pare,par/norm,pare/norm)
+                        axl.errorbar(zb,par/norm,yerr=pare/norm,fmt='ko')
             
             elif "SN" in name:
-                axl.errorbar(self.snz,self.snval,yerr=self.snerr,fmt='k.')
-            if (i==0):
-                axl.legend(fontsize=8)
+                axl.errorbar(self.snz,self.snval,yerr=self.snerr,fmt='ko')
+
+            if (i==1):
+                axl.legend(fontsize=12,ncol=2, frameon=False, loc='lower center')
             
-            #plt.xlabel("z")
-            axl.set_ylabel(name)
+            axl.set_ylabel(name,fontsize=14)
             axl.spines['right'].set_visible(False)
             axr.spines['left'].set_visible(False)
             #axl.yaxis.tick_left()
@@ -125,7 +133,7 @@ class ThinCandy:
             axr.set_xlim(1100,1200)
             axr.set_xticks([1120,1200])
 
-            if (i<3):
+            if (i<2):
                 axl.set_ylim(0.85,1.15)
                 axl.set_yticks([0.90,1.0,1.1])
             else:
@@ -139,14 +147,11 @@ class ThinCandy:
                 axr.set_ylim(0.995,1.005)
                 axr.set_yticks([0.997,1.0,1.003])
             elif (i==2):
-                axr.set_ylim(0.995,1.005)
-                axr.set_yticks([0.997,1.0,1.003])
-            elif (i==3):
                 axr.set_ylim(0.8,1.2)
                 axr.set_yticks([0.9,1.0,1.1])
 
             
-            if (i<3):
+            if (i<2):
                 for l in axl.get_xticklabels():
                     l.set_visible(False)
                 for l in axr.get_xticklabels():
@@ -163,8 +168,8 @@ class ThinCandy:
             kwargs = dict(transform=axr.transAxes, color='k', clip_on=False)
             axr.plot((-d*3/5,+d*3/5), (-d,+d), **kwargs)
             axr.plot((-d*3/5,+d*3/5),(1-d,1+d), **kwargs)
-            if (i==3):
-                axl.set_xlabel("$z$")
+            if (i==2):
+                axl.set_xlabel("$z$",fontsize=14)
 
 
         #plt.tight_layout()
