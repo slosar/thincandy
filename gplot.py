@@ -31,10 +31,14 @@ def main():
         zeff = 0.5 * (zmin + zmax)
         fs8 /= basefs8(zeff)
         fs8err /= basefs8(zeff)
+        #ax.errorbar(
+        #    zeff, fs8, yerr=fs8err, xerr=(zmax - zmin) / 2, fmt="-", color="k", lw=1
+        #)
         ax.errorbar(
-            zeff, fs8, yerr=fs8err, xerr=(zmax - zmin) / 2, fmt="-", color="k", lw=1
+            zeff, fs8, yerr=fs8err, fmt="o-", color="k", lw=2
         )
-        ax.errorbar(zeff, fs8, yerr=fs8err, fmt="o", color="k", lw=2)
+
+        #ax.errorbar(zeff, fs8, yerr=fs8err, fmt="o", color="k", lw=2)
 
     # for zmin,zmax,val,errplus, errmin in np.loadtxt('data/wl.txt',usecols=(1,2,3,4,5)):
     #     ## value is (Om/0.3)^1/2*sigma8
